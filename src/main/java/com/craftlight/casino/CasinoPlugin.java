@@ -8,14 +8,19 @@ import com.craftlight.casino.economy.EconomyManager;
 import com.craftlight.casino.gui.CasinoGUI;
 import com.craftlight.casino.gui.LCoinGUI;
 import com.craftlight.casino.gui.MarketGUI;
+import com.craftlight.casino.gui.MarketGUIHolder;
 import com.craftlight.casino.hologram.HologramManager;
 import com.craftlight.casino.listeners.ChatInputListener;
 import com.craftlight.casino.listeners.GUIClickListener;
 import com.craftlight.casino.market.MarketManager;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,6 +38,10 @@ public class CasinoPlugin extends JavaPlugin {
 
     // Oyuncu adina aktif gazino oturumlari (alan#id -> session)
     private final Map<UUID, CasinoSession> sessions = new ConcurrentHashMap<>();
+
+    // GUI'yi programatik olarak yeniden acarken (at secimi vb.) tetiklenen
+    // sahte InventoryCloseEvent'i yok saymak icin kullanilir.
+    private final Set<UUID> suppressNextClose = ConcurrentHashMap.newKeySet();
 
     // /alanayarla icin "blok ayarla" bekleyen oyuncular -> hangi alan id
     private final Map<UUID, Integer> pendingBlockSelect = new ConcurrentHashMap<>();
@@ -70,6 +79,23 @@ public class CasinoPlugin extends JavaPlugin {
         getCommand("lmarketitemsil").setExecutor(new LMarketItemSilCommand(this));
         getCommand("lmarketitemyeriayarla").setExecutor(new LMarketItemYeriAyarlaCommand(this));
         getCommand("lmarketparaayarla").setExecutor(new LMarketParaAyarlaCommand(this));
+
+        // Market GUI'sinde item isimlerini/lorelerini akan (RGB flowing) renklerle guncelleyen gorev
+        new BukkitRunnable() {
+            double phase = 0.0;
+
+            @Override
+            public void run() {
+                phase += 0.015;
+                if (phase >= 1.0) phase -= 1.0;
+                for (Player p : getServer().getOnlinePlayers()) {
+                    InventoryView view = p.getOpenInventory();
+                    if (view == null) continue;
+                    if (!(view.getTopInventory().getHolder() instanceof MarketGUIHolder holder)) continue;
+                    marketGUI.refreshAnimation(p, view.getTopInventory(), holder.getMode(), phase);
+                }
+            }
+        }.runTaskTimer(this, 0L, 2L);
 
         getLogger().info("CraftLightCasino basariyla etkinlestirildi!");
     }
@@ -131,5 +157,20 @@ public class CasinoPlugin extends JavaPlugin {
 
     public Map<UUID, ChatInputRequest> getChatInputWaiters() {
         return chatInputWaiters;
+    }
+
+    /**
+     * Gazino GUI'sini "sessizce" yeniden acar: bu esnada olusan InventoryCloseEvent
+     * gercek bir kapatma olarak islenmez (bahis iade edilmez, secim sifirlanmaz).
+     * At secimi, bahis geri cekme gibi ic guncellemelerde kullanilir.
+     */
+    public void openInventorySilently(Player player, Inventory inv) {
+        suppressNextClose.add(player.getUniqueId());
+        player.openInventory(inv);
+        suppressNextClose.remove(player.getUniqueId());
+    }
+
+    public boolean consumeSuppressedClose(UUID uuid) {
+        return suppressNextClose.remove(uuid);
     }
 }
