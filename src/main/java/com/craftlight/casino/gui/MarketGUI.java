@@ -3,13 +3,19 @@ package com.craftlight.casino.gui;
 import com.craftlight.casino.CasinoPlugin;
 import com.craftlight.casino.market.MarketItem;
 import com.craftlight.casino.util.ColorUtil;
+import com.craftlight.casino.util.GradientUtil;
 import com.craftlight.casino.util.ItemBuilder;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class MarketGUI {
@@ -26,9 +32,11 @@ public class MarketGUI {
     public static final int SLOT_HEAD = 4;
 
     private final CasinoPlugin plugin;
+    private final NamespacedKey marketIdKey;
 
     public MarketGUI(CasinoPlugin plugin) {
         this.plugin = plugin;
+        this.marketIdKey = new NamespacedKey(plugin, "clc_market_item_id");
     }
 
     public Inventory build(Player viewer, MarketGUIHolder.Mode mode) {
@@ -50,7 +58,7 @@ public class MarketGUI {
         // Kafa
         ItemStack head = new ItemBuilder(Material.PLAYER_HEAD)
                 .skullOwner(viewer)
-                .name("&6&l" + viewer.getName())
+                .name(GradientUtil.flow(viewer.getName(), 0.0, GradientUtil.RED_ORANGE))
                 .lore(
                         "&7Bakiyen: &e" + fmt(plugin.getEconomyManager().getBalance(viewer.getUniqueId())) + " " + plugin.getEconomyManager().getCurrencyName(),
                         "",
@@ -87,24 +95,75 @@ public class MarketGUI {
     private ItemStack buildDisplayItem(MarketItem mi, MarketGUIHolder.Mode mode) {
         ItemStack display = mi.getItem().clone();
         ItemBuilder ib = new ItemBuilder(display);
-        ib.name("&b&l" + mi.getName());
-        if (mode == MarketGUIHolder.Mode.EDIT_POSITION) {
-            ib.lore(
-                    "&7ID: &f#" + mi.getId(),
-                    "&7Fiyat: &6" + fmt(mi.getPrice()) + " " + plugin.getEconomyManager().getCurrencyName(),
-                    "",
-                    "&eYerini degistirmek icin tikla"
-            );
-        } else {
-            ib.lore(
-                    "&7ID: &f#" + mi.getId(),
-                    "",
-                    "&6" + fmt(mi.getPrice()) + " " + plugin.getEconomyManager().getCurrencyName(),
-                    "",
-                    "&a&lSatin almak icin tikla!"
-            );
-        }
+        ib.name(GradientUtil.flow(mi.getName(), 0.0, GradientUtil.RAINBOW));
+        ib.tag(marketIdKey, mi.getId());
+        ib.lore(buildLore(mi, mode, 0.0));
         return ib.build();
+    }
+
+    /**
+     * En az 3 satirlik akici (rgb pembe-beyaz flop) aciklama satirlarinin altina
+     * ID/fiyat gibi sabit bilgileri ekleyerek tam lore listesini olusturur.
+     * phase, animasyon icin renklerin kaydirilma miktaridir (0.0 = statik ilk hal).
+     */
+    private List<String> buildLore(MarketItem mi, MarketGUIHolder.Mode mode, double phase) {
+        List<String> lore = new ArrayList<>();
+        String[] desc = descriptionLines(mi);
+        for (int i = 0; i < desc.length; i++) {
+            double linePhase = phase + (i * 0.12); // her satir hafif farkli kaysin, dalga hissi versin
+            lore.add(GradientUtil.flow(desc[i], linePhase, GradientUtil.PINK_WHITE));
+        }
+        lore.add("");
+        lore.add(ColorUtil.c("&7ID: &f#" + mi.getId()));
+        if (mode == MarketGUIHolder.Mode.EDIT_POSITION) {
+            lore.add(ColorUtil.c("&7Fiyat: &6" + fmt(mi.getPrice()) + " " + plugin.getEconomyManager().getCurrencyName()));
+            lore.add("");
+            lore.add(ColorUtil.c("&eYerini degistirmek icin tikla"));
+        } else {
+            lore.add(ColorUtil.c("&6" + fmt(mi.getPrice()) + " " + plugin.getEconomyManager().getCurrencyName()));
+            lore.add("");
+            lore.add(ColorUtil.c("&a&lSatin almak icin tikla!"));
+        }
+        return lore;
+    }
+
+    private String[] descriptionLines(MarketItem mi) {
+        return new String[]{
+                mi.getName() + ", Craft Light Market'in ozenle secilmis koleksiyonundan sunuluyor.",
+                "Kullanan oyuncuya sunucuda ayricalikli, goze carpan bir stil kazandirir.",
+                "Sinirli miktarda hazirlandi - once gelen once alir, firsati kacirma!"
+        };
+    }
+
+    /**
+     * Su an acik olan Market GUI'lerindeki item isimlerini/lorelerini ve oyuncu
+     * kafasinin ismini, verilen animasyon fazina gore yeniden boyar (akan RGB efekti).
+     * Sadece meta (isim/lore) guncellenir; slot/materyal degismez.
+     */
+    public void refreshAnimation(Player viewer, Inventory inv, MarketGUIHolder.Mode mode, double phase) {
+        ItemStack head = inv.getItem(SLOT_HEAD);
+        if (head != null && head.getType() == Material.PLAYER_HEAD) {
+            ItemMeta hm = head.getItemMeta();
+            if (hm != null) {
+                hm.setDisplayName(GradientUtil.flow(viewer.getName(), phase, GradientUtil.RED_ORANGE));
+                head.setItemMeta(hm);
+            }
+        }
+
+        for (int slot : ITEM_SLOTS) {
+            ItemStack item = inv.getItem(slot);
+            if (item == null) continue;
+            ItemMeta meta = item.getItemMeta();
+            if (meta == null) continue;
+            Integer id = meta.getPersistentDataContainer().get(marketIdKey, PersistentDataType.INTEGER);
+            if (id == null) continue;
+            MarketItem mi = plugin.getMarketManager().get(id);
+            if (mi == null) continue;
+
+            meta.setDisplayName(GradientUtil.flow(mi.getName(), phase, GradientUtil.RAINBOW));
+            meta.setLore(buildLore(mi, mode, phase));
+            item.setItemMeta(meta);
+        }
     }
 
     private int slotIndex(int slot) {
