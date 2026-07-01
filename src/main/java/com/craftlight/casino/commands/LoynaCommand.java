@@ -56,7 +56,12 @@ public class LoynaCommand implements CommandExecutor {
         }
 
         if (area.isOccupied() && !player.getUniqueId().equals(area.getActivePlayer())) {
-            player.sendMessage("§c§l[Gazino #" + id + "] §cBu gazino su anda dolu! Baska bir oyuncu oynuyor, birazdan tekrar dene.");
+            player.sendMessage("§c§l[Gazino #" + id + "] §cBu gazinoda su anda baska biri duruyor! §7Diger gazinolara goz at.");
+            return true;
+        }
+
+        if (!area.isPlayerInside(player.getLocation())) {
+            player.sendMessage("§c§l[Gazino #" + id + "] §cBu gazinoyu kullanmak icin gazinonun uzerinde durmalisin!");
             return true;
         }
 
