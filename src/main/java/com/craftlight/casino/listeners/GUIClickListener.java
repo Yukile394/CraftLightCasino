@@ -94,47 +94,37 @@ public class GUIClickListener implements Listener {
         }
         if (session.isRacing()) return; // yaris surerken tiklamalar yok sayilir
 
-        // At secimi
+        // At secimi - artik sadece secim/isaretleme yapar, yarisi baslatmaz
         for (int i = 0; i < CasinoGUI.HORSE_SLOTS.length; i++) {
             if (CasinoGUI.HORSE_SLOTS[i] == slot) {
                 CasinoColor color = CasinoColor.values()[i];
-                if (session.getBet() <= 0) {
-                    player.sendMessage("§cOnce bahis eklemelisin! (Asagidaki §a1) Bahis Ekle §csecenegini kullan)");
-                    return;
-                }
                 if (session.getPendingColor() == color) {
-                    // Onay - yarisi baslat
-                    player.closeInventory();
-                    plugin.getCasinoGame().startRace(player, area, session, color, () -> {
-                        session.setPendingColor(null);
-                    });
+                    // Ayni ata tekrar tiklarsa secimi kaldirir
+                    session.setPendingColor(null);
+                    player.openInventory(plugin.getCasinoGUI().build(player, area, session, null));
                 } else {
                     session.setPendingColor(color);
+                    player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1.4f);
                     player.openInventory(plugin.getCasinoGUI().build(player, area, session, color));
                 }
                 return;
             }
         }
 
-        if (slot == CasinoGUI.SLOT_BAHIS_EKLE) {
-            int increment = plugin.getConfig().getInt("casino.bahis-artis-miktari", 100);
-            double max = plugin.getConfig().getDouble("casino.max-bahis", 1000000);
-            if (session.getBet() + increment > max) {
-                player.sendMessage("§cMaksimum bahis limitine ulastin! (" + fmt(max) + ")");
+        if (slot == CasinoGUI.SLOT_BAHSI_BASLAT) {
+            CasinoColor color = session.getPendingColor();
+            if (color == null) {
+                player.sendMessage("§cOnce yukaridaki 5 attan birini secmelisin!");
                 return;
             }
-            if (!plugin.getEconomyManager().withdraw(player.getUniqueId(), increment)) {
-                player.sendMessage("§cYetersiz bakiye! " + increment + " " + plugin.getEconomyManager().getCurrencyName() + "'in yok.");
+            if (session.getBet() <= 0) {
+                player.sendMessage("§cOnce bir bahis girmelisin! §7(/loyna <bahis> <#" + areaId + ">)");
                 return;
             }
-            session.setBet(session.getBet() + increment);
-            player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1.2f);
-            player.openInventory(plugin.getCasinoGUI().build(player, area, session, session.getPendingColor()));
-        } else if (slot == CasinoGUI.SLOT_BAHIS_AYARLA) {
-            plugin.getChatInputWaiters().put(player.getUniqueId(),
-                    new CasinoPlugin.ChatInputRequest(CasinoPlugin.ChatInputType.BAHIS_AYARLA, areaId));
             player.closeInventory();
-            player.sendMessage("§e§l[Gazino] §eSohbete eklemek istedigin bahis miktarini yaz. (Iptal icin 'iptal' yaz)");
+            plugin.getCasinoGame().startRace(player, area, session, color, () -> {
+                session.setPendingColor(null);
+            });
         } else if (slot == CasinoGUI.SLOT_BAHIS_GERI_CEK) {
             if (session.getBet() <= 0) {
                 player.sendMessage("§cGeri cekilecek bir bahsin yok.");
