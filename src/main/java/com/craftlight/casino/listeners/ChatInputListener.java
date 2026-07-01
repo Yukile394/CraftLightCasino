@@ -1,8 +1,6 @@
 package com.craftlight.casino.listeners;
 
 import com.craftlight.casino.CasinoPlugin;
-import com.craftlight.casino.casino.CasinoArea;
-import com.craftlight.casino.casino.CasinoSession;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
@@ -52,48 +50,10 @@ public class ChatInputListener implements Listener {
         }
 
         switch (request.type()) {
-            case BAHIS_AYARLA -> handleBahisAyarla(player, request.contextId(), amount);
             case MARKET_FIYAT -> {
                 // Su an /lmarketparaayarla komut ile dogrudan yapiliyor, ileride sohbet destekli
                 // fiyat girisi icin ayrilmistir.
             }
         }
-    }
-
-    private void handleBahisAyarla(Player player, int areaId, double amount) {
-        CasinoArea area = plugin.getCasinoManager().get(areaId);
-        CasinoSession session = plugin.getSession(player.getUniqueId());
-        if (area == null || session == null) {
-            player.sendMessage("§cBir hata olustu, gazino oturumun bulunamadi. Tekrar /loyna " + areaId + " yaz.");
-            return;
-        }
-
-        double min = plugin.getConfig().getDouble("casino.min-bahis", 100);
-        double max = plugin.getConfig().getDouble("casino.max-bahis", 1000000);
-
-        if (amount < min) {
-            player.sendMessage("§cMinimum bahis miktari: §e" + fmt(min) + " " + plugin.getEconomyManager().getCurrencyName());
-            return;
-        }
-        if (amount > max) {
-            player.sendMessage("§cMaksimum bahis miktari: §e" + fmt(max) + " " + plugin.getEconomyManager().getCurrencyName());
-            return;
-        }
-
-        if (!plugin.getEconomyManager().withdraw(player.getUniqueId(), amount)) {
-            player.sendMessage("§cYetersiz bakiye! Bu kadar " + plugin.getEconomyManager().getCurrencyName() + "'in yok.");
-            return;
-        }
-
-        session.setBet(session.getBet() + amount);
-        player.sendMessage("§a§l[Gazino] §aBahsine §e" + fmt(amount) + " " + plugin.getEconomyManager().getCurrencyName() + " §aeklendi! Toplam: §6" + fmt(session.getBet()));
-        player.openInventory(plugin.getCasinoGUI().build(player, area, session, session.getPendingColor()));
-    }
-
-    private String fmt(double val) {
-        if (val == Math.floor(val)) {
-            return String.valueOf((long) val);
-        }
-        return String.valueOf(val);
     }
 }
