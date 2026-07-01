@@ -22,7 +22,7 @@ APP_HOME=$( cd "$( dirname "$0" )" >/dev/null && pwd -P ) || exit
 APP_BASE_NAME=${0##*/}
 
 # Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
+DEFAULT_JVM_OPTS="-Xmx64m -Xms64m"
 
 warn () {
     echo "$*"
@@ -55,10 +55,10 @@ Please set the JAVA_HOME variable in your environment to match the
 location of your Java installation."
 fi
 
-CLASSPATH="\$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
 
 exec "$JAVACMD" $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS \
   "-Dorg.gradle.appname=$APP_BASE_NAME" \
-  -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" \
+  -classpath "$CLASSPATH" \
   org.gradle.wrapper.GradleWrapperMain \
   "$@"
