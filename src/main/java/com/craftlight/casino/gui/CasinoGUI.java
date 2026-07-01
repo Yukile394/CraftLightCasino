@@ -53,18 +53,7 @@ public class CasinoGUI {
         for (int i = 0; i < CasinoColor.values().length; i++) {
             CasinoColor color = CasinoColor.values()[i];
             boolean selected = color == highlighted;
-            ItemBuilder ib = new ItemBuilder(Material.LEATHER_HORSE_ARMOR)
-                    .leatherColor(color.getDye())
-                    .name((selected ? "&f&l» " : "&7") + color.getDisplayName() + (selected ? " &f&l«" : ""))
-                    .lore(
-                            "&7Bu ata bahis oynamak icin tikla.",
-                            "",
-                            selected ? "&a&l✔ SECILI &7- Bahsi Baslat'a bas!" : "&eSecmek icin tikla"
-                    ).flags();
-            if (selected) {
-                ib.glow();
-            }
-            inv.setItem(HORSE_SLOTS[i], ib.build());
+            inv.setItem(HORSE_SLOTS[i], buildHorseItem(color, selected, false, false));
         }
 
         String currency = plugin.getEconomyManager().getCurrencyName();
@@ -127,6 +116,43 @@ public class CasinoGUI {
     }
 
     /**
+     * Tek bir at (renk) itemini olusturur. Hem normal menu gorunumunde hem de
+     * CasinoGame'in yaris animasyonunda (isaretci gezinirken / racing=true) kullanilir.
+     *
+     * @param selected    oyuncunun bu ati sectigi/bahis oynadigi at mi
+     * @param sweepActive yaris animasyonunda isaretcinin su an bu atin uzerinde olup olmadigi
+     * @param racing      yaris su an devam ediyor mu (lore metnini buna gore degistirir)
+     */
+    public static ItemStack buildHorseItem(CasinoColor color, boolean selected, boolean sweepActive, boolean racing) {
+        String prefix;
+        String suffix = "";
+        if (sweepActive) {
+            prefix = "&f&l▶ ";
+            suffix = " &f&l◀";
+        } else if (selected) {
+            prefix = "&f&l» ";
+            suffix = " &f&l«";
+        } else {
+            prefix = "&7";
+        }
+
+        String loreLine1 = racing
+                ? (sweepActive ? "&e&lSira burada..." : "&7Yaris suruyor, bekle...")
+                : "&7Bu ata bahis oynamak icin tikla.";
+        String loreLine3 = racing ? "" : (selected ? "&a&l✔ SECILI &7- Bahsi Baslat'a bas!" : "&eSecmek icin tikla");
+
+        ItemBuilder ib = new ItemBuilder(Material.LEATHER_HORSE_ARMOR)
+                .leatherColor(color.getDye())
+                .name(prefix + color.getDisplayName() + suffix)
+                .lore(loreLine1, "", loreLine3)
+                .flags();
+        if (selected || sweepActive) {
+            ib.glow();
+        }
+        return ib.build();
+    }
+
+    /**
      * 1.21 tarzi, satranc tahtasi (checkerboard) desenli, secili renge gore
      * vurgulanan modern bir kenarlik olusturur (eski duz cam desenine kiyasla).
      */
@@ -166,4 +192,4 @@ public class CasinoGUI {
         }
         return String.valueOf(val);
     }
-                                   }
+}
