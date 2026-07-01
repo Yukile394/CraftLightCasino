@@ -1,0 +1,15 @@
+# CraftLightCasino Ayarlari
+economy:
+  para-adi: "LCoin"
+  baslangic-bakiyesi: 0
+
+casino:
+  max-alan: 20
+  bahis-artis-miktari: 100
+  min-bahis: 100
+  max-bahis: 1000000
+  kazanma-carpani: 2.0
+  yaris-suresi-saniye: 5
+
+market:
+  max-item: 15
