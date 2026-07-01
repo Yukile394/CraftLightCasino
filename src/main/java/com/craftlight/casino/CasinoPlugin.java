@@ -38,7 +38,7 @@ public class CasinoPlugin extends JavaPlugin {
     private final Map<UUID, Integer> pendingBlockSelect = new ConcurrentHashMap<>();
 
     // Sohbetten bahis/fiyat miktari bekleyen oyuncular
-    public enum ChatInputType { BAHIS_AYARLA, MARKET_FIYAT }
+    public enum ChatInputType { MARKET_FIYAT }
     public record ChatInputRequest(ChatInputType type, int contextId) {}
     private final Map<UUID, ChatInputRequest> chatInputWaiters = new ConcurrentHashMap<>();
 
