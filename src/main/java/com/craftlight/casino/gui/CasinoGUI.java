@@ -11,18 +11,16 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.Arrays;
-
 public class CasinoGUI {
 
     public static final int SIZE = 54;
 
     // Slotlar
     public static final int[] HORSE_SLOTS = {20, 21, 22, 23, 24};
-    public static final int SLOT_BAHIS_EKLE = 47;
-    public static final int SLOT_BAHIS_AYARLA = 49;
+    public static final int SLOT_BAHSI_BASLAT = 47;
+    public static final int SLOT_BAHIS_BILGI = 49; // Simetrik - mevcut bahis burada gozukur
     public static final int SLOT_BAHIS_GERI_CEK = 51;
-    public static final int SLOT_BILGI = 13;
+    public static final int SLOT_BILGI = 4;
 
     private final CasinoPlugin plugin;
 
@@ -32,25 +30,24 @@ public class CasinoGUI {
 
     public Inventory build(Player player, CasinoArea area, CasinoSession session, CasinoColor highlighted) {
         CasinoGUIHolder holder = new CasinoGUIHolder(area.getId());
-        Inventory inv = plugin.getServer().createInventory(holder, SIZE, ColorUtil.c("&8Craft Light &7» &6Gazino &8#" + area.getId()));
+        Inventory inv = plugin.getServer().createInventory(holder, SIZE,
+                ColorUtil.c("&8&l» &b&lCraft Light &7&lGazino &8&l#" + area.getId() + " &8&l«"));
         holder.setInventory(inv);
 
-        ItemStack border = glass(highlighted);
-        for (int i = 0; i < SIZE; i++) {
-            inv.setItem(i, border);
-        }
+        buildModernBorder(inv, highlighted);
 
         // Bilgi itemi
-        inv.setItem(SLOT_BILGI, new ItemBuilder(Material.PAPER)
-                .name("&6&lNasil Oynanir?")
+        inv.setItem(SLOT_BILGI, new ItemBuilder(Material.KNOWLEDGE_BOOK)
+                .name("&b&lNasil Oynanir?")
                 .lore(
-                        "&7Asagidaki 5 attan birini sec.",
-                        "&7Once bahis miktarini belirle,",
-                        "&7ardindan bir ata tiklayarak",
-                        "&7yarisi baslat!",
+                        "&7Asagidaki &f5 attan &7birini sec,",
+                        "&7secince at parlayarak isaretlenir.",
                         "",
-                        "&7Kazanirsan bahsin &ax2 &7katlanir!"
-                ).build());
+                        "&7Ardindan &a&lBahsi Baslat &7butonuna",
+                        "&7basarak yarisi baslat!",
+                        "",
+                        "&7Kazanirsan bahsin &a&lx2 &7katlanir!"
+                ).glow().build());
 
         // Atlar
         for (int i = 0; i < CasinoColor.values().length; i++) {
@@ -58,53 +55,99 @@ public class CasinoGUI {
             boolean selected = color == highlighted;
             ItemBuilder ib = new ItemBuilder(Material.LEATHER_HORSE_ARMOR)
                     .leatherColor(color.getDye())
-                    .name((selected ? "&l» " : "") + color.getDisplayName() + (selected ? " &l«" : ""))
+                    .name((selected ? "&f&l» " : "&7") + color.getDisplayName() + (selected ? " &f&l«" : ""))
                     .lore(
                             "&7Bu ata bahis oynamak icin tikla.",
                             "",
-                            selected ? "&a&lSECILI - Yarisi baslatmak icin tekrar tikla!" : "&eSecmek icin tikla"
+                            selected ? "&a&l✔ SECILI &7- Bahsi Baslat'a bas!" : "&eSecmek icin tikla"
                     ).flags();
+            if (selected) {
+                ib.glow();
+            }
             inv.setItem(HORSE_SLOTS[i], ib.build());
         }
 
         String currency = plugin.getEconomyManager().getCurrencyName();
         double balance = plugin.getEconomyManager().getBalance(player.getUniqueId());
-        int betIncrement = plugin.getConfig().getInt("casino.bahis-artis-miktari", 100);
+        boolean hasColor = highlighted != null;
+        boolean hasBet = session.getBet() > 0;
 
-        inv.setItem(SLOT_BAHIS_EKLE, new ItemBuilder(Material.EMERALD)
-                .name("&a&l1) Bahis Ekle (+" + betIncrement + ")")
-                .lore(
-                        "&7Bakiyenden &e" + betIncrement + " " + currency + " &7ekleyerek",
-                        "&7bahsini artirir.",
-                        "",
-                        "&7Bakiyen: &6" + fmt(balance) + " " + currency
-                ).build());
+        // 1) Bahsi Baslat
+        ItemBuilder startBuilder;
+        if (hasColor && hasBet) {
+            startBuilder = new ItemBuilder(Material.NETHERITE_INGOT)
+                    .name("&a&l1) Bahsi Baslat")
+                    .lore(
+                            "&7Secili at: " + highlighted.getDisplayName(),
+                            "&7Bahis: &6" + fmt(session.getBet()) + " " + currency,
+                            "",
+                            "&a&lBaslatmak icin tikla!"
+                    ).glow();
+        } else {
+            startBuilder = new ItemBuilder(Material.IRON_INGOT)
+                    .name("&7&l1) Bahsi Baslat")
+                    .lore(
+                            !hasColor ? "&cOnce yukaridan bir at sec!" : "&cOnce bir bahis girmelisin!",
+                            "&7(/loyna <bahis> <#" + area.getId() + "> yazarak bahis girebilirsin)"
+                    );
+        }
+        inv.setItem(SLOT_BAHSI_BASLAT, startBuilder.build());
 
-        inv.setItem(SLOT_BAHIS_AYARLA, new ItemBuilder(Material.ANVIL)
-                .name("&e&l2) Bahsi Kendin Ayarla")
-                .lore(
-                        "&7Tikla ve sohbete istedigin",
-                        "&7bahis miktarini yaz.",
-                        "",
-                        "&7Mevcut Bahis: &6" + fmt(session.getBet()) + " " + currency
-                ).build());
+        // 2) Simetrik bahis gostergesi - yeterli LCoin ile bahis girilmediyse hic gozukmez
+        if (hasBet) {
+            inv.setItem(SLOT_BAHIS_BILGI, new ItemBuilder(Material.GOLD_INGOT)
+                    .name("&6&l2) Mevcut Bahsin")
+                    .lore(
+                            "&7Su anki bahsin:",
+                            "&6&l" + fmt(session.getBet()) + " " + currency,
+                            "",
+                            "&7Bakiyen: &e" + fmt(balance) + " " + currency
+                    ).glow().build());
+        }
+        // hasBet == false ise slot, asagidaki modern border deseninde kalir (gozukmez).
 
-        inv.setItem(SLOT_BAHIS_GERI_CEK, new ItemBuilder(Material.REDSTONE)
-                .name("&c&l3) Bahsi Geri Cek")
-                .lore(
-                        "&7Koydugun bahsi iptal eder",
-                        "&7ve parani geri verir.",
-                        "",
-                        "&7Mevcut Bahis: &6" + fmt(session.getBet()) + " " + currency
-                ).build());
+        // 3) Bahsi Geri Cek
+        if (hasBet) {
+            inv.setItem(SLOT_BAHIS_GERI_CEK, new ItemBuilder(Material.REDSTONE)
+                    .name("&c&l3) Bahsi Geri Cek")
+                    .lore(
+                            "&7Koydugun bahsi iptal eder",
+                            "&7ve parani geri verir.",
+                            "",
+                            "&7Mevcut Bahis: &6" + fmt(session.getBet()) + " " + currency
+                    ).build());
+        } else {
+            inv.setItem(SLOT_BAHIS_GERI_CEK, new ItemBuilder(Material.GRAY_DYE)
+                    .name("&7&l3) Bahsi Geri Cek")
+                    .lore("&cGeri cekilecek bir bahsin yok.")
+                    .build());
+        }
 
         return inv;
     }
 
-    private ItemStack glass(CasinoColor color) {
+    /**
+     * 1.21 tarzi, satranc tahtasi (checkerboard) desenli, secili renge gore
+     * vurgulanan modern bir kenarlik olusturur (eski duz cam desenine kiyasla).
+     */
+    private void buildModernBorder(Inventory inv, CasinoColor color) {
+        ItemStack accent = pane(color);
+        ItemStack dark = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE).name(" ").build();
+
+        for (int i = 0; i < SIZE; i++) {
+            int row = i / 9;
+            int col = i % 9;
+            boolean isEdge = row == 0 || row == 5 || col == 0 || col == 8;
+            if (!isEdge) continue;
+            boolean checker = (row + col) % 2 == 0;
+            inv.setItem(i, checker ? accent : dark);
+        }
+    }
+
+    private ItemStack pane(CasinoColor color) {
         Material mat;
         if (color == null) {
-            mat = Material.GRAY_STAINED_GLASS_PANE;
+            mat = Material.CYAN_STAINED_GLASS_PANE;
         } else {
             mat = switch (color) {
                 case KIRMIZI -> Material.RED_STAINED_GLASS_PANE;
@@ -123,4 +166,4 @@ public class CasinoGUI {
         }
         return String.valueOf(val);
     }
-}
+                                   }
