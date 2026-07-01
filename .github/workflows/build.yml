@@ -1,0 +1,54 @@
+name: Build CraftLightCasino
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodu indir
+        uses: actions/checkout@v4
+
+      - name: JDK 21 kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Gradle wrapper'ı oluştur (eksikse)
+        run: |
+          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            echo "gradle-wrapper.jar bulunamadi, Gradle kurup wrapper olusturuluyor..."
+            sudo apt-get update -y
+            sudo apt-get install -y unzip wget
+            wget -q https://services.gradle.org/distributions/gradle-8.10-bin.zip -O /tmp/gradle.zip
+            unzip -q /tmp/gradle.zip -d /tmp
+            /tmp/gradle-8.10/bin/gradle wrapper --gradle-version 8.10
+          fi
+          chmod +x ./gradlew
+
+      - name: Gradle Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Derle (shadowJar)
+        run: ./gradlew shadowJar --no-daemon
+
+      - name: Jar dosyasını yükle (Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: CraftLightCasino-jar
+          path: build/libs/*.jar
+          if-no-files-found: error
