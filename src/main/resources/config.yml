@@ -9,7 +9,7 @@ casino:
   min-bahis: 100
   max-bahis: 1000000
   kazanma-carpani: 2.0
-  yaris-suresi-saniye: 5
+  yaris-suresi-saniye: 4
 
 market:
   max-item: 15
