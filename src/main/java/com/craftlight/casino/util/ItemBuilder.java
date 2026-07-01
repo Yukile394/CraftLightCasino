@@ -59,6 +59,19 @@ public class ItemBuilder {
         return this;
     }
 
+    /**
+     * Iteme "buyulenmis" parlama efekti (glint) verir ama buyu ismini gostermez.
+     * 1.21 tarzi modern/parlak gorunum icin kullanilir (secili at, aktif bahis vb.).
+     */
+    public ItemBuilder glow() {
+        try {
+            meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        } catch (Exception ignored) {
+        }
+        return this;
+    }
+
     public ItemBuilder leatherColor(Color color) {
         if (meta instanceof LeatherArmorMeta lam) {
             lam.setColor(color);
