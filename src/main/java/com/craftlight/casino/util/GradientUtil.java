@@ -70,5 +70,10 @@ public final class GradientUtil {
     public static final Color[] RED_ORANGE = {
             new Color(0xFF3B3B), new Color(0xFF9A3B), new Color(0xFFD23B), new Color(0xFF3B3B)
     };
-      }
-  
+
+    // Market kafasi (oyuncu ismi) icin premium altin-beyaz palet
+    public static final Color[] GOLD_WHITE = {
+            new Color(0xFFD75E), new Color(0xFFFFFF), new Color(0xFFC233), new Color(0xFFFFFF)
+    };
+}
+
