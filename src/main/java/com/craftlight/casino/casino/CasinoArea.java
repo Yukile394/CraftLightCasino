@@ -68,4 +68,28 @@ public class CasinoArea {
     public boolean isOccupied() {
         return running || activePlayer != null;
     }
+
+    /**
+     * Verilen konumun bu gazino alaninin (pos1 - pos2 arasindaki kutunun)
+     * icinde olup olmadigini kontrol eder. /loyna komutunu kullanmak icin
+     * oyuncunun gazinonun uzerinde/icinde durmasi gerekir.
+     */
+    public boolean isPlayerInside(Location loc) {
+        if (pos1 == null || pos2 == null || loc == null) return false;
+        if (pos1.getWorld() == null || loc.getWorld() == null) return false;
+        if (!pos1.getWorld().equals(loc.getWorld())) return false;
+
+        int minX = (int) Math.floor(Math.min(pos1.getX(), pos2.getX()));
+        int maxX = (int) Math.floor(Math.max(pos1.getX(), pos2.getX()));
+        int minY = (int) Math.floor(Math.min(pos1.getY(), pos2.getY())) - 1;
+        int maxY = (int) Math.floor(Math.max(pos1.getY(), pos2.getY())) + 1;
+        int minZ = (int) Math.floor(Math.min(pos1.getZ(), pos2.getZ()));
+        int maxZ = (int) Math.floor(Math.max(pos1.getZ(), pos2.getZ()));
+
+        int px = (int) Math.floor(loc.getX());
+        int py = (int) Math.floor(loc.getY());
+        int pz = (int) Math.floor(loc.getZ());
+
+        return px >= minX && px <= maxX && py >= minY && py <= maxY && pz >= minZ && pz <= maxZ;
+    }
 }
