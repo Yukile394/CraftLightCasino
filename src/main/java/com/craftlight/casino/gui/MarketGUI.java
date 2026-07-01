@@ -42,8 +42,8 @@ public class MarketGUI {
     public Inventory build(Player viewer, MarketGUIHolder.Mode mode) {
         MarketGUIHolder holder = new MarketGUIHolder(mode);
         String title = mode == MarketGUIHolder.Mode.EDIT_POSITION
-                ? "&8Craft Light &7» &6Market &8(&eYer Ayarlama&8)"
-                : "&8Craft Light &7» &6Market";
+                ? "&8✦ &6Craft Light &7» &fMarket &8(&eYer Ayarlama&8) &8✦"
+                : "&8✦ &6Craft Light &7» &fMarket &8✦";
         Inventory inv = plugin.getServer().createInventory(holder, SIZE, ColorUtil.c(title));
         holder.setInventory(inv);
 
@@ -58,7 +58,7 @@ public class MarketGUI {
         // Kafa
         ItemStack head = new ItemBuilder(Material.PLAYER_HEAD)
                 .skullOwner(viewer)
-                .name(GradientUtil.flow(viewer.getName(), 0.0, GradientUtil.RED_ORANGE))
+                .name(headName(viewer.getName(), 0.0))
                 .lore(
                         "&7Bakiyen: &e" + fmt(plugin.getEconomyManager().getBalance(viewer.getUniqueId())) + " " + plugin.getEconomyManager().getCurrencyName(),
                         "",
@@ -93,26 +93,47 @@ public class MarketGUI {
     }
 
     private ItemStack buildDisplayItem(MarketItem mi, MarketGUIHolder.Mode mode) {
+        // Orijinal lore, eklenen esyanin ustune yazilmadan once yakalanir (varsa korunur)
+        List<String> originalLore = capturedLore(mi);
+
         ItemStack display = mi.getItem().clone();
         ItemBuilder ib = new ItemBuilder(display);
-        ib.name(GradientUtil.flow(mi.getName(), 0.0, GradientUtil.RAINBOW));
+        ib.name(itemName(mi.getName(), 0.0));
         ib.tag(marketIdKey, mi.getId());
-        ib.lore(buildLore(mi, mode, 0.0));
+        ib.lore(buildLore(mi, mode, 0.0, originalLore));
         return ib.build();
     }
 
     /**
-     * En az 3 satirlik akici (rgb pembe-beyaz flop) aciklama satirlarinin altina
-     * ID/fiyat gibi sabit bilgileri ekleyerek tam lore listesini olusturur.
+     * Esyanin /lmarketesyaekle ile eklenirken elde zaten sahip oldugu lore'u yakalar.
+     * Bu lore, daha sonra market goruntusune eklenirken uzerine yazilmaz, korunur.
+     */
+    private List<String> capturedLore(MarketItem mi) {
+        ItemStack raw = mi.getItem();
+        if (raw == null || raw.getItemMeta() == null) return null;
+        List<String> lore = raw.getItemMeta().getLore();
+        if (lore == null || lore.isEmpty()) return null;
+        return lore;
+    }
+
+    /**
+     * Esyanin zaten bir lore'u varsa oldugu gibi korunur, altina kucuk ve sik
+     * "Craft Light > Tikla ve Satin Al" markalama satirlari (pembe-beyaz akan RGB) eklenir.
+     * Esyanin lore'u yoksa dogrudan sadece bu markalama satirlari gosterilir.
+     * ID/fiyat gibi sabit bilgiler her zaman en altta kalir.
      * phase, animasyon icin renklerin kaydirilma miktaridir (0.0 = statik ilk hal).
      */
-    private List<String> buildLore(MarketItem mi, MarketGUIHolder.Mode mode, double phase) {
+    private List<String> buildLore(MarketItem mi, MarketGUIHolder.Mode mode, double phase, List<String> originalLore) {
         List<String> lore = new ArrayList<>();
-        String[] desc = descriptionLines(mi);
-        for (int i = 0; i < desc.length; i++) {
-            double linePhase = phase + (i * 0.12); // her satir hafif farkli kaysin, dalga hissi versin
-            lore.add(GradientUtil.flow(desc[i], linePhase, GradientUtil.PINK_WHITE));
+
+        if (originalLore != null && !originalLore.isEmpty()) {
+            lore.addAll(originalLore);
+            lore.add("");
         }
+
+        lore.add(GradientUtil.flow("✦ Craft Light", phase, GradientUtil.PINK_WHITE));
+        lore.add(GradientUtil.flow("➤ Tikla ve Satin Al", phase + 0.12, GradientUtil.PINK_WHITE));
+
         lore.add("");
         lore.add(ColorUtil.c("&7ID: &f#" + mi.getId()));
         if (mode == MarketGUIHolder.Mode.EDIT_POSITION) {
@@ -127,12 +148,14 @@ public class MarketGUI {
         return lore;
     }
 
-    private String[] descriptionLines(MarketItem mi) {
-        return new String[]{
-                mi.getName() + ", Craft Light Market'in ozenle secilmis koleksiyonundan sunuluyor.",
-                "Kullanan oyuncuya sunucuda ayricalikli, goze carpan bir stil kazandirir.",
-                "Sinirli miktarda hazirlandi - once gelen once alir, firsati kacirma!"
-        };
+    /** Esya ismi icin kucuk zarif isaretlerle sarilmis pembe-beyaz akan RGB isim. */
+    private String itemName(String name, double phase) {
+        return GradientUtil.flow("✦ " + name + " ✦", phase, GradientUtil.PINK_WHITE);
+    }
+
+    /** Ust kisimdaki oyuncu kafasi icin daha sik/premium altin-beyaz akan RGB isim. */
+    private String headName(String playerName, double phase) {
+        return GradientUtil.flow("★ " + playerName, phase, GradientUtil.GOLD_WHITE);
     }
 
     /**
@@ -145,7 +168,7 @@ public class MarketGUI {
         if (head != null && head.getType() == Material.PLAYER_HEAD) {
             ItemMeta hm = head.getItemMeta();
             if (hm != null) {
-                hm.setDisplayName(GradientUtil.flow(viewer.getName(), phase, GradientUtil.RED_ORANGE));
+                hm.setDisplayName(headName(viewer.getName(), phase));
                 head.setItemMeta(hm);
             }
         }
@@ -160,8 +183,8 @@ public class MarketGUI {
             MarketItem mi = plugin.getMarketManager().get(id);
             if (mi == null) continue;
 
-            meta.setDisplayName(GradientUtil.flow(mi.getName(), phase, GradientUtil.RAINBOW));
-            meta.setLore(buildLore(mi, mode, phase));
+            meta.setDisplayName(itemName(mi.getName(), phase));
+            meta.setLore(buildLore(mi, mode, phase, capturedLore(mi)));
             item.setItemMeta(meta);
         }
     }
