@@ -68,6 +68,12 @@ public class GUIClickListener implements Listener {
         if (!(holder instanceof CasinoGUIHolder casinoHolder)) return;
         if (!(e.getPlayer() instanceof Player player)) return;
 
+        // Bu kapatma, at secimi/bahis geri cekme gibi bizim tetikledigimiz bir
+        // ic yenilemeden kaynaklaniyorsa gercek bir kapatma degildir - yok say.
+        if (plugin.consumeSuppressedClose(player.getUniqueId())) {
+            return;
+        }
+
         CasinoSession session = plugin.getSession(player.getUniqueId());
         if (session == null) return;
         if (session.isRacing()) return; // yaris devam ederken kapatilirsa dokunma
@@ -101,11 +107,11 @@ public class GUIClickListener implements Listener {
                 if (session.getPendingColor() == color) {
                     // Ayni ata tekrar tiklarsa secimi kaldirir
                     session.setPendingColor(null);
-                    player.openInventory(plugin.getCasinoGUI().build(player, area, session, null));
+                    plugin.openInventorySilently(player, plugin.getCasinoGUI().build(player, area, session, null));
                 } else {
                     session.setPendingColor(color);
                     player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1.4f);
-                    player.openInventory(plugin.getCasinoGUI().build(player, area, session, color));
+                    plugin.openInventorySilently(player, plugin.getCasinoGUI().build(player, area, session, color));
                 }
                 return;
             }
@@ -121,7 +127,6 @@ public class GUIClickListener implements Listener {
                 player.sendMessage("§cOnce bir bahis girmelisin! §7(/loyna <bahis> <#" + areaId + ">)");
                 return;
             }
-            player.closeInventory();
             plugin.getCasinoGame().startRace(player, area, session, color, () -> {
                 session.setPendingColor(null);
             });
@@ -134,7 +139,7 @@ public class GUIClickListener implements Listener {
             player.sendMessage("§a§l[Gazino] §aBahsin (" + fmt(session.getBet()) + " " + plugin.getEconomyManager().getCurrencyName() + ") iade edildi.");
             session.setBet(0);
             session.setPendingColor(null);
-            player.openInventory(plugin.getCasinoGUI().build(player, area, session, null));
+            plugin.openInventorySilently(player, plugin.getCasinoGUI().build(player, area, session, null));
         }
     }
 
@@ -214,4 +219,4 @@ public class GUIClickListener implements Listener {
         }
         return String.valueOf(val);
     }
-}
+            }
