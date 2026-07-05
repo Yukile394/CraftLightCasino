@@ -75,5 +75,11 @@ public final class GradientUtil {
     public static final Color[] GOLD_WHITE = {
             new Color(0xFFD75E), new Color(0xFFFFFF), new Color(0xFFC233), new Color(0xFFFFFF)
     };
+
+    // Koruma sistemi (title/GUI) icin profesyonel mavi-beyaz akan RGB palet
+    public static final Color[] BLUE_WHITE = {
+            new Color(0x1E90FF), new Color(0x5FC9FF), new Color(0xFFFFFF),
+            new Color(0x4BA3FF), new Color(0x0D5FCC), new Color(0xFFFFFF)
+    };
 }
 
