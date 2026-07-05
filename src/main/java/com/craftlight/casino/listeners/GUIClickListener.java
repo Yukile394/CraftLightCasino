@@ -6,6 +6,7 @@ import com.craftlight.casino.casino.CasinoColor;
 import com.craftlight.casino.casino.CasinoSession;
 import com.craftlight.casino.gui.CasinoGUI;
 import com.craftlight.casino.gui.CasinoGUIHolder;
+import com.craftlight.casino.gui.KorumaGUIHolder;
 import com.craftlight.casino.gui.LCoinGUIHolder;
 import com.craftlight.casino.gui.MarketGUI;
 import com.craftlight.casino.gui.MarketGUIHolder;
@@ -37,7 +38,7 @@ public class GUIClickListener implements Listener {
     @EventHandler
     public void onDrag(InventoryDragEvent e) {
         InventoryHolder holder = e.getInventory().getHolder();
-        if (holder instanceof CasinoGUIHolder || holder instanceof MarketGUIHolder || holder instanceof LCoinGUIHolder) {
+        if (holder instanceof CasinoGUIHolder || holder instanceof MarketGUIHolder || holder instanceof LCoinGUIHolder || holder instanceof KorumaGUIHolder) {
             e.setCancelled(true);
         }
     }
@@ -45,7 +46,7 @@ public class GUIClickListener implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         InventoryHolder holder = e.getInventory().getHolder();
-        if (!(holder instanceof CasinoGUIHolder) && !(holder instanceof MarketGUIHolder) && !(holder instanceof LCoinGUIHolder)) {
+        if (!(holder instanceof CasinoGUIHolder) && !(holder instanceof MarketGUIHolder) && !(holder instanceof LCoinGUIHolder) && !(holder instanceof KorumaGUIHolder)) {
             return;
         }
         e.setCancelled(true);
@@ -219,4 +220,4 @@ public class GUIClickListener implements Listener {
         }
         return String.valueOf(val);
     }
-            }
+}
