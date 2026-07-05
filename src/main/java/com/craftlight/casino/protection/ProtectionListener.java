@@ -2,6 +2,8 @@ package com.craftlight.casino.protection;
 
 import com.craftlight.casino.CasinoPlugin;
 import com.craftlight.casino.util.ColorUtil;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -81,7 +83,7 @@ public class ProtectionListener implements Listener {
             );
             player.sendMessage(ColorUtil.c(PREFIX + "&fYeni oyuncu koruman &c&lsona erdi&7! Artık diğer oyunculara vurabilir, onlardan vurulabilirsin."));
         } else {
-            sendKorumaTitle(player, "&b&lKORUMA AKTİF", subtitle(pm.getRemaining(uuid)));
+            sendKorumaActionBar(player, pm.getRemaining(uuid));
         }
     }
 
@@ -113,7 +115,7 @@ public class ProtectionListener implements Listener {
         if (attackerKorumali) {
             attacker.sendMessage(ColorUtil.c(PREFIX + "&fBaşlangıç koruman Varken Başkalarına Saldıramazsın!"));
         } else {
-            attacker.sendMessage(ColorUtil.c(PREFIX + "&f🛡 Bu oyuncu başlangıç koruması altında. Ona saldıramazsın!"));
+            attacker.sendMessage(ColorUtil.c(PREFIX + "&f Bu oyuncu başlangıç koruması altında. Ona saldıramazsın!"));
         }
     }
 
@@ -171,5 +173,9 @@ public class ProtectionListener implements Listener {
     private String subtitle(int kalan) {
         return ColorUtil.c("&7• &fKorumanın Bitmesine &b&l" + kalan + " &7Blok Kaldı &7•");
     }
-            }
 
+    private void sendKorumaActionBar(Player player, int kalan) {
+        String mesaj = ColorUtil.c("&b&lKorumanın bitmesine kalan blok: &f&l" + kalan);
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(mesaj));
+    }
+                  }
