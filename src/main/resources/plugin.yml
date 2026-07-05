@@ -10,43 +10,54 @@ commands:
     description: Gazino alani ayarlar
     usage: /alanayarla <id> <1|2|blok>
     permission: craftlight.admin
+
   loyna:
     description: Gazinoda oyun oyna
     usage: /loyna <id> [bahis]
+
   lcoin:
     description: LCoin bakiyeni gosterir
     usage: /lcoin
+
   lcoinver:
     description: Bir oyuncuya LCoin verir
     usage: /lcoinver <oyuncu> <miktar>
     permission: craftlight.admin
+
   lcoinparacek:
     description: Bir oyuncudan LCoin ceker
     usage: /lcoinparacek <miktar> <oyuncu>
     permission: craftlight.admin
+
   gazinohologram:
     description: Durdugun yere gazino hologrami koyar
     usage: /gazinohologram
     permission: craftlight.admin
+
   lmarket:
     description: Marketi acar
     usage: /lmarket
+
   lmarketesyaekle:
     description: Elindeki esyayi markete ekler
     usage: /lmarketesyaekle <isim> <id>
     permission: craftlight.admin
+
   lmarketitemsil:
     description: Marketten esya siler
     usage: /lmarketitemsil <isim> <id>
     permission: craftlight.admin
+
   lmarketitemyeriayarla:
     description: Market esyalarinin yerini duzenleme moduyla acar
     usage: /lmarketitemyeriayarla
     permission: craftlight.admin
+
   lmarketparaayarla:
     description: Market esyasinin fiyatini ayarlar
     usage: /lmarketparaayarla <isim> <id> <fiyat>
     permission: craftlight.admin
+
   koruma:
     description: Yeni oyuncu korumasi hakkinda bilgi menusunu acar
     usage: /koruma bilgi
