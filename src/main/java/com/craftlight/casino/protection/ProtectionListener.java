@@ -54,7 +54,7 @@ public class ProtectionListener implements Listener {
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 if (!player.isOnline()) return;
                 sendKorumaTitle(player, "&b&lKORUMAN HÂLÂ AKTİF", subtitle(pm.getRemaining(uuid)));
-                player.sendMessage(ColorUtil.c(PREFIX + "&fKoruman hâlâ aktif! Kaldığın yerden devam ediyor. &7(&b/koruma bilgi&7)"));
+                player.sendMessage(ColorUtil.c(PREFIX + "&fKoruman hala aktif! Kaldığın yerden devam ediyor. &7(&b/koruma bilgi&7)"));
             });
         }
     }
