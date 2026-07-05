@@ -47,6 +47,9 @@ commands:
     description: Market esyasinin fiyatini ayarlar
     usage: /lmarketparaayarla <isim> <id> <fiyat>
     permission: craftlight.admin
+  koruma:
+    description: Yeni oyuncu korumasi hakkinda bilgi menusunu acar
+    usage: /koruma bilgi
 
 permissions:
   craftlight.admin:
