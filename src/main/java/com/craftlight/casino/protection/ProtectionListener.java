@@ -2,7 +2,6 @@ package com.craftlight.casino.protection;
 
 import com.craftlight.casino.CasinoPlugin;
 import com.craftlight.casino.util.ColorUtil;
-import com.craftlight.casino.util.GradientUtil;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -20,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ProtectionListener implements Listener {
 
-    private static final String PREFIX = "&8[&b&lCraft Light&8] &7» ";
+    private static final String PREFIX = "&8[&9Craft Light&8] &7» ";
 
     private final CasinoPlugin plugin;
 
@@ -42,19 +41,19 @@ public class ProtectionListener implements Listener {
         if (!pm.hasRecord(uuid)) {
             // Ilk giris - koruma ilk kez aktif ediliyor
             pm.activateForNewPlayer(uuid);
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
                 if (!player.isOnline()) return;
                 sendKorumaTitle(player, "&b&lKORUMA AKTİF", subtitle(pm.getRemaining(uuid)));
                 player.sendMessage(ColorUtil.c(PREFIX + "&fSunucuya hoş geldin! &b" + pm.getBaslangicBlok()
                         + " blok&7'luk yeni oyuncu koruman aktif edildi. &7(&b/koruma bilgi&7)"));
-            }, 20L);
+            });
         } else if (pm.isActive(uuid)) {
             // Koruma bitmeden cikmis, tekrar giriyor - kaldigi yerden devam
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
                 if (!player.isOnline()) return;
                 sendKorumaTitle(player, "&b&lKORUMAN HÂLÂ AKTİF", subtitle(pm.getRemaining(uuid)));
                 player.sendMessage(ColorUtil.c(PREFIX + "&fKoruman hâlâ aktif! Kaldığın yerden devam ediyor. &7(&b/koruma bilgi&7)"));
-            }, 20L);
+            });
         }
     }
 
@@ -97,10 +96,10 @@ public class ProtectionListener implements Listener {
 
         if (attackerKorumali) {
             e.setCancelled(true);
-            attacker.sendMessage(ColorUtil.c(PREFIX + "&fKoruma Varken Başkalarına Saldıramazsın!"));
+            attacker.sendMessage(ColorUtil.c(PREFIX + "&fBaşlangıç koruman Varken Başkalarına Saldıramazsın!"));
         } else if (victimKorumali) {
             e.setCancelled(true);
-            attacker.sendMessage(ColorUtil.c(PREFIX + "&fBu Oyuncu Korumalı, Saldıramazsın!"));
+            attacker.sendMessage(ColorUtil.c(PREFIX + "&f🛡 Bu oyuncu başlangıç koruması altında. Ona saldıramazsın!"));
         }
     }
 
@@ -152,12 +151,11 @@ public class ProtectionListener implements Listener {
     }
 
     private void sendKorumaTitle(Player player, String mainTitle, String subtitle) {
-        String title = GradientUtil.flow(org.bukkit.ChatColor.stripColor(ColorUtil.c(mainTitle)), 0.0, GradientUtil.BLUE_WHITE);
-        player.sendTitle(title, subtitle, 0, 30, 5);
+        player.sendTitle(ColorUtil.c(mainTitle), subtitle, 0, 30, 5);
     }
 
     private String subtitle(int kalan) {
         return ColorUtil.c("&7• &fKorumanın Bitmesine &b&l" + kalan + " &7Blok Kaldı &7•");
     }
-}
-
+            }
+                
