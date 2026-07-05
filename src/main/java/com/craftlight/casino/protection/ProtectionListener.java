@@ -5,6 +5,7 @@ import com.craftlight.casino.util.ColorUtil;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -12,6 +13,7 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.util.Vector;
 
 import java.util.Map;
 import java.util.UUID;
@@ -83,7 +85,7 @@ public class ProtectionListener implements Listener {
         }
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onDamage(EntityDamageByEntityEvent e) {
         if (!(e.getEntity() instanceof Player victim)) return;
 
@@ -94,11 +96,23 @@ public class ProtectionListener implements Listener {
         boolean attackerKorumali = pm.isActive(attacker.getUniqueId());
         boolean victimKorumali = pm.isActive(victim.getUniqueId());
 
+        if (!attackerKorumali && !victimKorumali) return;
+
+        // Kesin iptal: hasari sifirla, olayi iptal et ve tepkiyi (knockback) da geri al
+        // ki tek bir vurus, iptal edilmeden once sizan bir tepkiyle "2 vurus" gibi hissettirmesin.
+        e.setDamage(0);
+        e.setCancelled(true);
+
+        Vector victimVel = victim.getVelocity().clone();
+        Vector attackerVel = attacker.getVelocity().clone();
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (victim.isOnline()) victim.setVelocity(victimVel);
+            if (attacker.isOnline()) attacker.setVelocity(attackerVel);
+        });
+
         if (attackerKorumali) {
-            e.setCancelled(true);
             attacker.sendMessage(ColorUtil.c(PREFIX + "&fBaşlangıç koruman Varken Başkalarına Saldıramazsın!"));
-        } else if (victimKorumali) {
-            e.setCancelled(true);
+        } else {
             attacker.sendMessage(ColorUtil.c(PREFIX + "&f🛡 Bu oyuncu başlangıç koruması altında. Ona saldıramazsın!"));
         }
     }
@@ -158,4 +172,4 @@ public class ProtectionListener implements Listener {
         return ColorUtil.c("&7• &fKorumanın Bitmesine &b&l" + kalan + " &7Blok Kaldı &7•");
     }
             }
-                
+
