@@ -6,6 +6,8 @@ import com.craftlight.casino.casino.CasinoSession;
 import com.craftlight.casino.commands.*;
 import com.craftlight.casino.economy.EconomyManager;
 import com.craftlight.casino.gui.CasinoGUI;
+import com.craftlight.casino.gui.KorumaGUI;
+import com.craftlight.casino.gui.KorumaGUIHolder;
 import com.craftlight.casino.gui.LCoinGUI;
 import com.craftlight.casino.gui.MarketGUI;
 import com.craftlight.casino.gui.MarketGUIHolder;
@@ -13,6 +15,8 @@ import com.craftlight.casino.hologram.HologramManager;
 import com.craftlight.casino.listeners.ChatInputListener;
 import com.craftlight.casino.listeners.GUIClickListener;
 import com.craftlight.casino.market.MarketManager;
+import com.craftlight.casino.protection.ProtectionListener;
+import com.craftlight.casino.protection.ProtectionManager;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
@@ -35,6 +39,9 @@ public class CasinoPlugin extends JavaPlugin {
     private CasinoGUI casinoGUI;
     private MarketGUI marketGUI;
     private LCoinGUI lcoinGUI;
+    private KorumaGUI korumaGUI;
+
+    private ProtectionManager protectionManager;
 
     // Oyuncu adina aktif gazino oturumlari (alan#id -> session)
     private final Map<UUID, CasinoSession> sessions = new ConcurrentHashMap<>();
@@ -64,9 +71,13 @@ public class CasinoPlugin extends JavaPlugin {
         this.casinoGUI = new CasinoGUI(this);
         this.marketGUI = new MarketGUI(this);
         this.lcoinGUI = new LCoinGUI(this);
+        this.korumaGUI = new KorumaGUI(this);
+
+        this.protectionManager = new ProtectionManager(this);
 
         getServer().getPluginManager().registerEvents(new GUIClickListener(this), this);
         getServer().getPluginManager().registerEvents(new ChatInputListener(this), this);
+        getServer().getPluginManager().registerEvents(new ProtectionListener(this), this);
 
         getCommand("alanayarla").setExecutor(new AlanAyarlaCommand(this));
         getCommand("loyna").setExecutor(new LoynaCommand(this));
@@ -79,6 +90,7 @@ public class CasinoPlugin extends JavaPlugin {
         getCommand("lmarketitemsil").setExecutor(new LMarketItemSilCommand(this));
         getCommand("lmarketitemyeriayarla").setExecutor(new LMarketItemYeriAyarlaCommand(this));
         getCommand("lmarketparaayarla").setExecutor(new LMarketParaAyarlaCommand(this));
+        getCommand("koruma").setExecutor(new KorumaCommand(this));
 
         // Market GUI'sinde item isimlerini/lorelerini akan (RGB flowing) renklerle guncelleyen gorev
         new BukkitRunnable() {
@@ -91,8 +103,12 @@ public class CasinoPlugin extends JavaPlugin {
                 for (Player p : getServer().getOnlinePlayers()) {
                     InventoryView view = p.getOpenInventory();
                     if (view == null) continue;
-                    if (!(view.getTopInventory().getHolder() instanceof MarketGUIHolder holder)) continue;
-                    marketGUI.refreshAnimation(p, view.getTopInventory(), holder.getMode(), phase);
+                    Object rawHolder = view.getTopInventory().getHolder();
+                    if (rawHolder instanceof MarketGUIHolder holder) {
+                        marketGUI.refreshAnimation(p, view.getTopInventory(), holder.getMode(), phase);
+                    } else if (rawHolder instanceof KorumaGUIHolder) {
+                        korumaGUI.refreshAnimation(p, view.getTopInventory(), phase);
+                    }
                 }
             }
         }.runTaskTimer(this, 0L, 2L);
@@ -104,6 +120,7 @@ public class CasinoPlugin extends JavaPlugin {
     public void onDisable() {
         if (casinoManager != null) casinoManager.save();
         if (marketManager != null) marketManager.save();
+        if (protectionManager != null) protectionManager.save();
         getLogger().info("CraftLightCasino devre disi birakildi.");
     }
 
@@ -137,6 +154,14 @@ public class CasinoPlugin extends JavaPlugin {
 
     public LCoinGUI getLcoinGUI() {
         return lcoinGUI;
+    }
+
+    public KorumaGUI getKorumaGUI() {
+        return korumaGUI;
+    }
+
+    public ProtectionManager getProtectionManager() {
+        return protectionManager;
     }
 
     public CasinoSession getOrCreateSession(Player player, int areaId) {
