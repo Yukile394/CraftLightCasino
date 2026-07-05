@@ -13,3 +13,7 @@ casino:
 
 market:
   max-item: 15
+
+koruma:
+  # Yeni oyuncularin ilk giriste kirmasi gereken blok sayisi (koruma boyunca)
+  baslangic-blok: 200
