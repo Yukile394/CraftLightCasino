@@ -12,11 +12,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.util.Vector;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +33,15 @@ public class ProtectionListener implements Listener {
     // portal uyarisi icin spam onleme
     private final Map<UUID, Long> portalWarnCooldown = new ConcurrentHashMap<>();
 
+    // AuthMe, basarili login/register sonrasinda oyuncuyu spawn'a PLUGIN
+    // sebebiyle isinlar. Koruma (eski oturumdan kalma "aktif" durum yuzunden)
+    // bu isinlanmayi engellemesin diye, oyuncu her girisinde (join) bir kereye
+    // mahsus "bekleyen giris isinlanmasi" izni taniriz. Bu izin, o oturumdaki
+    // ilk PLUGIN kaynakli isinlanmada (yani AuthMe'nin spawn isinlanmasinda)
+    // kullanilir ve hemen tuketilir; boylece koruma ilk giriste oldugu gibi
+    // her giriste sorunsuz calisir.
+    private final Set<UUID> bekleyenGirisIsinlanmasi = ConcurrentHashMap.newKeySet();
+
     public ProtectionListener(CasinoPlugin plugin) {
         this.plugin = plugin;
     }
@@ -41,9 +52,17 @@ public class ProtectionListener implements Listener {
     // koruma aktif olup suresi islemeye baslar.
 
     @EventHandler
+    public void onJoin(PlayerJoinEvent e) {
+        // Her yeni baglantida, AuthMe'nin (varsa) yapacagi spawn isinlanmasi
+        // icin bir kerelik gecis izni taniriz.
+        bekleyenGirisIsinlanmasi.add(e.getPlayer().getUniqueId());
+    }
+
+    @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         pickupWarnCooldown.remove(e.getPlayer().getUniqueId());
         portalWarnCooldown.remove(e.getPlayer().getUniqueId());
+        bekleyenGirisIsinlanmasi.remove(e.getPlayer().getUniqueId());
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -124,10 +143,23 @@ public class ProtectionListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent e) {
         Player player = e.getPlayer();
+        UUID playerUuid = player.getUniqueId();
         ProtectionManager pm = plugin.getProtectionManager();
-        if (!pm.isActive(player.getUniqueId())) return;
 
         PlayerTeleportEvent.TeleportCause cause = e.getCause();
+
+        // AuthMe (veya baska bir giris eklentisi), basarili login/register
+        // sonrasinda oyuncuyu PLUGIN sebebiyle spawn'a isinlar. Koruma onceki
+        // oturumdan beri zaten aktifse bile bu isinlanma engellenmemeli;
+        // aksi halde oyuncu ikinci ve sonraki girislerde spawn'a isinlanamaz.
+        // Bu izin, oyuncunun o oturumdaki ilk PLUGIN kaynakli isinlanmasinda
+        // bir kereye mahsus kullanilir.
+        if (cause == PlayerTeleportEvent.TeleportCause.PLUGIN && bekleyenGirisIsinlanmasi.remove(playerUuid)) {
+            return;
+        }
+
+        if (!pm.isActive(playerUuid)) return;
+
         boolean portal = cause == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL
                 || cause == PlayerTeleportEvent.TeleportCause.END_PORTAL
                 || cause == PlayerTeleportEvent.TeleportCause.END_GATEWAY
