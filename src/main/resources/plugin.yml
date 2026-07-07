@@ -4,6 +4,7 @@ main: com.craftlight.casino.CasinoPlugin
 api-version: '1.21'
 author: Yukilm
 description: Craft Light sunucusu icin LCoin ekonomili gazino & market eklentisi
+softdepend: [AuthMe]
 
 commands:
   alanayarla:
