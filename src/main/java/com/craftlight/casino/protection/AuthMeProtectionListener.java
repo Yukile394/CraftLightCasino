@@ -2,12 +2,14 @@ package com.craftlight.casino.protection;
 
 import com.craftlight.casino.CasinoPlugin;
 import com.craftlight.casino.util.ColorUtil;
+import fr.xephi.authme.api.v3.AuthMeApi;
 import fr.xephi.authme.events.LoginEvent;
 import fr.xephi.authme.events.RegisterEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerMoveEvent;
 
 import java.util.UUID;
 
@@ -77,6 +79,36 @@ public class AuthMeProtectionListener implements Listener {
                 sendKorumaTitle(player, "&b&lKORUMAN HÂLÂ AKTİF", subtitle(pm.getRemaining(uuid)));
                 player.sendMessage(ColorUtil.c(PREFIX + "&fGiriş başarılı! Koruman hala aktif, kaldığın yerden devam ediyor. &7(&b/koruma bilgi&7)"));
             });
+        }
+    }
+
+    /**
+     * GUVENLIK AGI: AuthMe dogrulamasi (register/login) tamamlanmamis bir
+     * oyuncunun X/Z konumunu degistirecek hicbir harekete izin verilmez.
+     *
+     * Bu listener AuthMe'nin kendi hareket engelinin YERINE GECMEZ, ona EK bir
+     * katmandir: sadece hareketi iptal edebilir, ASLA "serbest" birakmaz
+     * (event.setCancelled(false) hicbir zaman cagrilmaz). Bu yuzden AuthMe'nin
+     * engellemesiyle hicbir sekilde catismaz veya onu gecersiz kilmaz - AuthMe
+     * zaten iptal etmisse burasi hicbir sey yapmaz, etmemisse (ornegin AuthMe
+     * ile baska bir eklenti arasinda oncelik catismasi olursa) burasi devreye
+     * girer. Kafa/kamera donmesine (sadece yaw/pitch degisimi) izin verilir.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onMoveBeforeAuth(PlayerMoveEvent e) {
+        if (e.getTo() == null) return;
+        if (e.getFrom().getX() == e.getTo().getX() && e.getFrom().getZ() == e.getTo().getZ()) {
+            return; // sadece bakis yonu degisti, konum degismedi -> izinli
+        }
+
+        Player player = e.getPlayer();
+        try {
+            if (!AuthMeApi.getInstance().isAuthenticated(player)) {
+                e.setTo(e.getFrom());
+            }
+        } catch (Exception ignored) {
+            // AuthMe API beklenmedik sekilde hata verirse sessizce yok say,
+            // AuthMe'nin kendi engellemesi zaten aktif olmaya devam eder.
         }
     }
 
