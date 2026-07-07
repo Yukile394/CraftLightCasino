@@ -12,7 +12,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.util.Vector;
@@ -36,30 +35,10 @@ public class ProtectionListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler
-    public void onJoin(PlayerJoinEvent e) {
-        Player player = e.getPlayer();
-        ProtectionManager pm = plugin.getProtectionManager();
-        UUID uuid = player.getUniqueId();
-
-        if (!pm.hasRecord(uuid)) {
-            // Ilk giris - koruma ilk kez aktif ediliyor
-            pm.activateForNewPlayer(uuid);
-            plugin.getServer().getScheduler().runTask(plugin, () -> {
-                if (!player.isOnline()) return;
-                sendKorumaTitle(player, "&b&lKORUMA AKTİF", subtitle(pm.getRemaining(uuid)));
-                player.sendMessage(ColorUtil.c(PREFIX + "&fSunucuya hoş geldin! &b" + pm.getBaslangicBlok()
-                        + " blok&7'luk yeni oyuncu koruman aktif edildi. &7(&b/koruma bilgi&7)"));
-            });
-        } else if (pm.isActive(uuid)) {
-            // Koruma bitmeden cikmis, tekrar giriyor - kaldigi yerden devam
-            plugin.getServer().getScheduler().runTask(plugin, () -> {
-                if (!player.isOnline()) return;
-                sendKorumaTitle(player, "&b&lKORUMAN HÂLÂ AKTİF", subtitle(pm.getRemaining(uuid)));
-                player.sendMessage(ColorUtil.c(PREFIX + "&fKoruman hala aktif! Kaldığın yerden devam ediyor. &7(&b/koruma bilgi&7)"));
-            });
-        }
-    }
+    // NOT: Koruma artik PlayerJoinEvent'te DEGIL, AuthMe'nin basarili
+    // RegisterEvent / LoginEvent'lerinde (bkz. AuthMeProtectionListener) baslatiliyor.
+    // Boylece oyuncu sunucuya baglandigi anda degil, kayit/giris tamamlandiginda
+    // koruma aktif olup suresi islemeye baslar.
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
@@ -166,16 +145,8 @@ public class ProtectionListener implements Listener {
         player.sendMessage(ColorUtil.c(PREFIX + "&fKoruma Aktifken Portallardan Geçemezsin! &7(&b/koruma bilgi&7)"));
     }
 
-    private void sendKorumaTitle(Player player, String mainTitle, String subtitle) {
-        player.sendTitle(ColorUtil.c(mainTitle), subtitle, 0, 30, 5);
-    }
-
-    private String subtitle(int kalan) {
-        return ColorUtil.c("&7• &fKorumanın Bitmesine &b&l" + kalan + " &7Blok Kaldı &7•");
-    }
-
     private void sendKorumaActionBar(Player player, int kalan) {
         String mesaj = ColorUtil.c("&b&lKorumanın bitmesine kalan blok: &f&l" + kalan);
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(mesaj));
     }
-                  }
+}
