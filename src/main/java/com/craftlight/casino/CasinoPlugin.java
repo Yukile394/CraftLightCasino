@@ -15,6 +15,7 @@ import com.craftlight.casino.hologram.HologramManager;
 import com.craftlight.casino.listeners.ChatInputListener;
 import com.craftlight.casino.listeners.GUIClickListener;
 import com.craftlight.casino.market.MarketManager;
+import com.craftlight.casino.protection.AuthMeProtectionListener;
 import com.craftlight.casino.protection.ProtectionListener;
 import com.craftlight.casino.protection.ProtectionManager;
 import org.bukkit.entity.Player;
@@ -78,6 +79,15 @@ public class CasinoPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new GUIClickListener(this), this);
         getServer().getPluginManager().registerEvents(new ChatInputListener(this), this);
         getServer().getPluginManager().registerEvents(new ProtectionListener(this), this);
+
+        // Koruma sadece AuthMe'nin basarili register/login eventleriyle baslar.
+        // AuthMe yuklu degilse koruma hicbir zaman aktif olmaz, bu yuzden uyar.
+        if (getServer().getPluginManager().getPlugin("AuthMe") != null) {
+            getServer().getPluginManager().registerEvents(new AuthMeProtectionListener(this), this);
+            getLogger().info("AuthMe bulundu, koruma sistemi AuthMe register/login eventleriyle senkronize edildi.");
+        } else {
+            getLogger().warning("AuthMe bulunamadi! Yeni oyuncu korumasi, AuthMe eventlerine bagli oldugu icin hicbir oyuncuda aktif olmayacak.");
+        }
 
         getCommand("alanayarla").setExecutor(new AlanAyarlaCommand(this));
         getCommand("loyna").setExecutor(new LoynaCommand(this));
