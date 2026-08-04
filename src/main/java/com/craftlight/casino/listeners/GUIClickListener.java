@@ -10,7 +10,9 @@ import com.craftlight.casino.gui.KorumaGUIHolder;
 import com.craftlight.casino.gui.LCoinGUIHolder;
 import com.craftlight.casino.gui.MarketGUI;
 import com.craftlight.casino.gui.MarketGUIHolder;
+import com.craftlight.casino.gui.ScreenAyarlaGUIHolder;
 import com.craftlight.casino.market.MarketItem;
+import com.craftlight.casino.util.ColorUtil;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -38,7 +40,8 @@ public class GUIClickListener implements Listener {
     @EventHandler
     public void onDrag(InventoryDragEvent e) {
         InventoryHolder holder = e.getInventory().getHolder();
-        if (holder instanceof CasinoGUIHolder || holder instanceof MarketGUIHolder || holder instanceof LCoinGUIHolder || holder instanceof KorumaGUIHolder) {
+        if (holder instanceof CasinoGUIHolder || holder instanceof MarketGUIHolder || holder instanceof LCoinGUIHolder
+                || holder instanceof KorumaGUIHolder || holder instanceof ScreenAyarlaGUIHolder) {
             e.setCancelled(true);
         }
     }
@@ -46,7 +49,8 @@ public class GUIClickListener implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         InventoryHolder holder = e.getInventory().getHolder();
-        if (!(holder instanceof CasinoGUIHolder) && !(holder instanceof MarketGUIHolder) && !(holder instanceof LCoinGUIHolder) && !(holder instanceof KorumaGUIHolder)) {
+        if (!(holder instanceof CasinoGUIHolder) && !(holder instanceof MarketGUIHolder) && !(holder instanceof LCoinGUIHolder)
+                && !(holder instanceof KorumaGUIHolder) && !(holder instanceof ScreenAyarlaGUIHolder)) {
             return;
         }
         e.setCancelled(true);
@@ -59,8 +63,35 @@ public class GUIClickListener implements Listener {
             handleCasinoClick(player, casinoHolder, slot);
         } else if (holder instanceof MarketGUIHolder marketHolder) {
             handleMarketClick(player, marketHolder, e.getInventory(), slot);
+        } else if (holder instanceof ScreenAyarlaGUIHolder) {
+            handleScreenAyarlaClick(player, e.getInventory(), slot, e.isRightClick());
         }
         // LCoinGUIHolder icin tiklamada bir islem yapilmaz (sadece bilgi menusu)
+    }
+
+    private void handleScreenAyarlaClick(Player player, Inventory inv, int slot, boolean rightClick) {
+        ItemStack clicked = inv.getItem(slot);
+        if (clicked == null || !clicked.hasItemMeta()) return;
+        Integer screenId = clicked.getItemMeta().getPersistentDataContainer()
+                .get(plugin.getScreenAyarlaGUI().screenIdKey, org.bukkit.persistence.PersistentDataType.INTEGER);
+        if (screenId == null) return;
+
+        var screen = plugin.getScreenManager().get(screenId);
+        if (screen == null) {
+            player.sendMessage(ColorUtil.c("&cBu ekran artik mevcut degil."));
+            return;
+        }
+
+        if (rightClick) {
+            plugin.getScreenManager().remove(screenId);
+            player.sendMessage(ColorUtil.c("&c&l[Ekran] &cSilvera ekrani #" + screenId + " silindi."));
+            player.closeInventory();
+            player.openInventory(plugin.getScreenAyarlaGUI().build(player));
+        } else {
+            player.closeInventory();
+            player.teleport(screen.getZoneCenterLocation());
+            player.sendMessage(ColorUtil.c("&#4DA3FF&l[Ekran] &fSilvera ekrani #" + screenId + " karsisina isinlandin."));
+        }
     }
 
     @EventHandler
