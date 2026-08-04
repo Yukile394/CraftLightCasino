@@ -11,13 +11,16 @@ import com.craftlight.casino.gui.KorumaGUIHolder;
 import com.craftlight.casino.gui.LCoinGUI;
 import com.craftlight.casino.gui.MarketGUI;
 import com.craftlight.casino.gui.MarketGUIHolder;
+import com.craftlight.casino.gui.ScreenAyarlaGUI;
 import com.craftlight.casino.hologram.HologramManager;
 import com.craftlight.casino.listeners.ChatInputListener;
 import com.craftlight.casino.listeners.GUIClickListener;
+import com.craftlight.casino.listeners.ScreenZoneListener;
 import com.craftlight.casino.market.MarketManager;
 import com.craftlight.casino.protection.AuthMeProtectionListener;
 import com.craftlight.casino.protection.ProtectionListener;
 import com.craftlight.casino.protection.ProtectionManager;
+import com.craftlight.casino.screen.ScreenManager;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
@@ -41,8 +44,10 @@ public class CasinoPlugin extends JavaPlugin {
     private MarketGUI marketGUI;
     private LCoinGUI lcoinGUI;
     private KorumaGUI korumaGUI;
+    private ScreenAyarlaGUI screenAyarlaGUI;
 
     private ProtectionManager protectionManager;
+    private ScreenManager screenManager;
 
     // Oyuncu adina aktif gazino oturumlari (alan#id -> session)
     private final Map<UUID, CasinoSession> sessions = new ConcurrentHashMap<>();
@@ -73,12 +78,17 @@ public class CasinoPlugin extends JavaPlugin {
         this.marketGUI = new MarketGUI(this);
         this.lcoinGUI = new LCoinGUI(this);
         this.korumaGUI = new KorumaGUI(this);
+        this.screenAyarlaGUI = new ScreenAyarlaGUI(this);
 
         this.protectionManager = new ProtectionManager(this);
+
+        this.screenManager = new ScreenManager(this);
+        this.screenManager.loadAll();
 
         getServer().getPluginManager().registerEvents(new GUIClickListener(this), this);
         getServer().getPluginManager().registerEvents(new ChatInputListener(this), this);
         getServer().getPluginManager().registerEvents(new ProtectionListener(this), this);
+        getServer().getPluginManager().registerEvents(new ScreenZoneListener(this), this);
 
         // Koruma sadece AuthMe'nin basarili register/login eventleriyle baslar.
         // AuthMe yuklu degilse koruma hicbir zaman aktif olmaz, bu yuzden uyar.
@@ -101,6 +111,8 @@ public class CasinoPlugin extends JavaPlugin {
         getCommand("lmarketitemyeriayarla").setExecutor(new LMarketItemYeriAyarlaCommand(this));
         getCommand("lmarketparaayarla").setExecutor(new LMarketParaAyarlaCommand(this));
         getCommand("koruma").setExecutor(new KorumaCommand(this));
+        getCommand("loynaekranyansit").setExecutor(new LoynaEkranYansitCommand(this));
+        getCommand("ayarla").setExecutor(new AyarlaCommand(this));
 
         // Market GUI'sinde item isimlerini/lorelerini akan (RGB flowing) renklerle guncelleyen gorev
         new BukkitRunnable() {
@@ -131,6 +143,7 @@ public class CasinoPlugin extends JavaPlugin {
         if (casinoManager != null) casinoManager.save();
         if (marketManager != null) marketManager.save();
         if (protectionManager != null) protectionManager.save();
+        if (screenManager != null) screenManager.removeAllFrames();
         getLogger().info("CraftLightCasino devre disi birakildi.");
     }
 
@@ -172,6 +185,14 @@ public class CasinoPlugin extends JavaPlugin {
 
     public ProtectionManager getProtectionManager() {
         return protectionManager;
+    }
+
+    public ScreenManager getScreenManager() {
+        return screenManager;
+    }
+
+    public ScreenAyarlaGUI getScreenAyarlaGUI() {
+        return screenAyarlaGUI;
     }
 
     public CasinoSession getOrCreateSession(Player player, int areaId) {
