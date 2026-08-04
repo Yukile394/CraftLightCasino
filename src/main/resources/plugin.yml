@@ -63,6 +63,16 @@ commands:
     description: Yeni oyuncu korumasi hakkinda bilgi menusunu acar
     usage: /koruma bilgi
 
+  loynaekranyansit:
+    description: Baktigin yuzeye otomatik hizali 3x3 Silvera ekrani olusturur
+    usage: /loynaekranyansit <ID> <Isim>
+    permission: craftlight.admin
+
+  ayarla:
+    description: Silvera ekran yonetim menusunu acar
+    usage: /ayarla
+    permission: craftlight.admin
+
 permissions:
   craftlight.admin:
     description: CraftLightCasino yonetici komutlarina erisim
